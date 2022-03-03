@@ -1,9 +1,10 @@
-module github.com/iugotech/gorm-adapter/v3
+module github.com/casbin/gorm-adapter/v3
 
 go 1.14
 
 require (
 	github.com/casbin/casbin/v2 v2.37.4
+	github.com/denisenkom/go-mssqldb v0.11.0 // indirect
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/lib/pq v1.10.2
 	github.com/stretchr/testify v1.7.0
