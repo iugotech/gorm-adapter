@@ -75,6 +75,7 @@ type Adapter struct {
 	dbSpecified    bool
 	db             *gorm.DB
 	isFiltered     bool
+	schemaName     string
 }
 
 // finalizer is the destructor for Adapter.
@@ -189,6 +190,27 @@ func NewAdapterByDBUseTableName(db *gorm.DB, prefix string, tableName string) (*
 	a := &Adapter{
 		tablePrefix: prefix,
 		tableName:   tableName,
+	}
+
+	a.db = db.Scopes(a.casbinRuleTable()).Session(&gorm.Session{Context: db.Statement.Context})
+	err := a.createTable()
+	if err != nil {
+		return nil, err
+	}
+
+	return a, nil
+}
+
+// NewAdapterByDBUseSchemaName creates gorm-adapter by an existing Gorm instance and the specified schema and table name
+// Example: gormadapter.NewAdapterByDBUseSchemaName(&db, "customSchema", "casbin") Automatically converts table name to "customSchema.casbin" and generate the table in "customSchema" schema
+func NewAdapterByDBUseSchemaName(db *gorm.DB, schema string, tableName string) (*Adapter, error) {
+	if len(tableName) == 0 {
+		tableName = defaultTableName
+	}
+
+	a := &Adapter{
+		schemaName: schema,
+		tableName:  tableName,
 	}
 
 	a.db = db.Scopes(a.casbinRuleTable()).Session(&gorm.Session{Context: db.Statement.Context})
@@ -349,10 +371,14 @@ func (a *Adapter) getTableInstance() *CasbinRule {
 }
 
 func (a *Adapter) getFullTableName() string {
+	tableName := a.tableName
 	if a.tablePrefix != "" {
-		return a.tablePrefix + "_" + a.tableName
+		tableName = a.tablePrefix + "_" + tableName
 	}
-	return a.tableName
+	if a.schemaName != "" {
+		tableName = a.schemaName + "." + tableName
+	}
+	return tableName
 }
 
 func (a *Adapter) casbinRuleTable() func(db *gorm.DB) *gorm.DB {
